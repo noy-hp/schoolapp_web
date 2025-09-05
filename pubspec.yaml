@@ -9,15 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  pdfrx: ^1.2.5
   http: ^1.2.2
   google_fonts: ^6.2.1
-  # PDF viewer with toolbar (used on News/Grad page)
-  syncfusion_flutter_pdfviewer: ^26.2.10  # or the latest stable
-
-  # If you still use pdfrx anywhere else, keep it; otherwise you can remove it
-  # pdfrx: ^1.2.5
-
+  syncfusion_flutter_pdfviewer: ^26.2.10   # PDF viewer used on News/Grad page
+  url_launcher: ^6.3.0                      # needed for "Open in new tab"
+  pdfrx: ^1.2.5                             # keep only if you still use it elsewhere
 
 dev_dependencies:
   flutter_test:
@@ -27,7 +23,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    
     - assets/covers/
     - assets/library_pdfs/
     - assets/news_pdfs/
