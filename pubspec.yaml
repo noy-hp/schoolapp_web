@@ -1,24 +1,37 @@
 name: schoolapp_web
-description: A simple Flutter web site
-publish_to: "none"
-
+description: "A new Flutter project."
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ^3.8.1
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
+  pdfrx: ^1.2.5
   http: ^1.2.2
+  google_fonts: ^6.2.1
+  # PDF viewer with toolbar (used on News/Grad page)
+  syncfusion_flutter_pdfviewer: ^26.2.10  # or the latest stable
+
+  # If you still use pdfrx anywhere else, keep it; otherwise you can remove it
+  # pdfrx: ^1.2.5
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/
+    
+    - assets/covers/
+    - assets/library_pdfs/
+    - assets/news_pdfs/
+    - assets/hero/
+    - assets/about/recruitment_banner.jpg
+    - assets/about/brochure_front.jpg
+    - assets/about/brochure_back.jpg
