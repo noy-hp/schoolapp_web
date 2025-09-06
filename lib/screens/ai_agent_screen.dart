@@ -1,11 +1,18 @@
+// lib/screens/ai_agent_screen.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../widgets/nav_bar.dart';
 
-/// Change this to match your backend endpoint.
-/// Example assumes a POST http://localhost:3000/chat with JSON { "message": "..." }
-const String kChatEndpoint = 'http://localhost:3000/chat';
+/// API base is provided at build time:
+///   flutter run -d chrome --dart-define=API_BASE=https://abc123.ngrok-free.app
+///   flutter build web --dart-define=API_BASE=https://abc123.ngrok-free.app
+const String _apiBase =
+    String.fromEnvironment('API_BASE', defaultValue: 'http://127.0.0.1:3000');
+
+Uri _chatUri() => Uri.parse('$_apiBase/chat');
+Uri _healthUri() => Uri.parse('$_apiBase/health');
 
 class AIAgentScreen extends StatefulWidget {
   const AIAgentScreen({super.key});
@@ -14,19 +21,67 @@ class AIAgentScreen extends StatefulWidget {
   State<AIAgentScreen> createState() => _AIAgentScreenState();
 }
 
+enum _ApiStatus { unknown, online, offline, blocked }
+
 class _AIAgentScreenState extends State<AIAgentScreen> {
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage(role: _Role.assistant, text: 'Hi! Ask me anything 😊'),
-  ];
+  final List<_ChatMessage> _messages = const [
+    _ChatMessage(role: _Role.assistant, text: 'Hi! Ask me anything 😊'),
+  ].toList();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
+
+  _ApiStatus _apiStatus = _ApiStatus.unknown;
+  String _apiNote = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBackend();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkBackend() async {
+    // Mixed-content guard: HTTPS page cannot call HTTP API in the browser.
+    if (kIsWeb &&
+        Uri.base.scheme == 'https' &&
+        (_chatUri().scheme == 'http' || _healthUri().scheme == 'http')) {
+      setState(() {
+        _apiStatus = _ApiStatus.blocked;
+        _apiNote =
+            'This page is HTTPS but the API is HTTP.\nUse an HTTPS URL (e.g. ngrok) and rebuild with '
+            '--dart-define=API_BASE=https://...';
+      });
+      return;
+    }
+
+    try {
+      final res = await http
+          .get(_healthUri(), headers: const {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        setState(() {
+          _apiStatus = _ApiStatus.online;
+          _apiNote = 'Connected';
+        });
+      } else {
+        setState(() {
+          _apiStatus = _ApiStatus.offline;
+          _apiNote = 'Server responded ${res.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _apiStatus = _ApiStatus.offline;
+        _apiNote = 'Cannot reach API: $e';
+      });
+    }
   }
 
   Future<void> _send() async {
@@ -40,20 +95,36 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
     });
     _scrollToBottom();
 
+    // Helpful error if blocked by mixed content
+    if (_apiStatus == _ApiStatus.blocked) {
+      setState(() {
+        _messages.add(const _ChatMessage(
+          role: _Role.assistant,
+          text:
+              'Cannot call the backend because the site is HTTPS and the API is HTTP.\n'
+              'Rebuild the site with an HTTPS API url (ngrok or any TLS endpoint).',
+        ));
+        _sending = false;
+      });
+      _scrollToBottom();
+      return;
+    }
+
     try {
-      final uri = Uri.parse(kChatEndpoint);
-      final res = await http.post(
-        uri,
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'message': text}),
-      );
+      final res = await http
+          .post(
+            _chatUri(),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'message': text}),
+          )
+          .timeout(const Duration(seconds: 60));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        String reply = '';
+        String reply;
         try {
           final decoded = jsonDecode(res.body);
-          // Flexible parsing to match common backend shapes
           reply = (decoded['reply'] ??
+                  decoded['final_answer'] ??
                   decoded['answer'] ??
                   decoded['content'] ??
                   decoded['text'] ??
@@ -76,8 +147,10 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
     } catch (e) {
       setState(() {
         _messages.add(_ChatMessage(
-            role: _Role.assistant,
-            text: 'Network error: $e\n(Check that your backend is running and CORS is enabled.)'));
+          role: _Role.assistant,
+          text:
+              'Network error: $e\n• Make sure your backend is running\n• If this site is on GitHub Pages, the API must be HTTPS.\n• CORS is already allowed in the sample FastAPI.',
+        ));
       });
     } finally {
       setState(() => _sending = false);
@@ -89,7 +162,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       _scroll.animateTo(
-        _scroll.position.maxScrollExtent + 120,
+        _scroll.position.maxScrollExtent + 160,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
@@ -98,25 +171,64 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = switch (_apiStatus) {
+      _ApiStatus.online => Colors.green,
+      _ApiStatus.offline => Colors.red,
+      _ApiStatus.blocked => Colors.orange,
+      _ => Colors.grey,
+    };
+
     return Scaffold(
       appBar: const NavBar(),
       body: Column(
         children: [
-          const SizedBox(height: 16),
-          const Text(
-            '🤖 Ask with AI Agent',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+          const SizedBox(height: 12),
+          Text(
+            '🤖 Learn with AI',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
+
+          // Small connection banner
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Material(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+              child: ListTile(
+                dense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                leading: Icon(Icons.cloud, color: statusColor),
+                title: Text(
+                  'API: $_apiBase',
+                  style: const TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  _apiNote.isEmpty ? 'Checking…' : _apiNote,
+                  style: TextStyle(fontSize: 12, color: statusColor),
+                ),
+                trailing: IconButton(
+                  tooltip: 'Recheck connection',
+                  onPressed: _checkBackend,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
 
           // Chat area
           Expanded(
             child: ListView.builder(
               controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               itemCount: _messages.length + (_sending ? 1 : 0),
               itemBuilder: (context, index) {
-                // Typing indicator at the end when sending
                 if (_sending && index == _messages.length) {
                   return const _TypingBubble();
                 }
@@ -146,7 +258,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
                           )
                         ],
                       ),
-                      child: Text(
+                      child: SelectableText(
                         m.text,
                         style: TextStyle(
                           color: isUser ? Colors.white : Colors.black87,
@@ -224,9 +336,9 @@ class _TypingBubble extends StatelessWidget {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
+        child: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             _Dot(), SizedBox(width: 4),
             _Dot(delayMs: 150), SizedBox(width: 4),
             _Dot(delayMs: 300),
