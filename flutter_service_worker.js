@@ -3,9 +3,9 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "ab00f5167803b8ff7837820f8fb9557e",
-"assets/AssetManifest.bin.json": "b454ecbe53a42cc40930b9bbdee80071",
-"assets/AssetManifest.json": "9845138b8f00fcf412b8fbe5e0e3f89a",
+const RESOURCES = {"assets/AssetManifest.bin": "364b6544eedb953b21dcca0153d6ad6c",
+"assets/AssetManifest.bin.json": "a4415933f6d0231c7c6e7b121ffae6c6",
+"assets/AssetManifest.json": "a04322919eb009d22c68a1aed99545d9",
 "assets/assets/about/brochure_back.jpg": "6561801faf5f3ca66c38f4ce593b5d30",
 "assets/assets/about/brochure_front.jpg": "f7b2eaa1486ca42bf79d0b90a5f86177",
 "assets/assets/about/recruitment_banner.jpg": "9a4f974c9143d6a9613f90f68c597096",
@@ -24,11 +24,8 @@ const RESOURCES = {"assets/AssetManifest.bin": "ab00f5167803b8ff7837820f8fb9557e
 "assets/assets/library_pdfs/6.pdf": "2497e887f4667e77dac218f690418bd9",
 "assets/assets/news_pdfs/grad1.pdf": "fb62fc33551e845c904814c1df695d8a",
 "assets/FontManifest.json": "ea9dc826036577df024fd0fe176dd298",
-"assets/fonts/MaterialIcons-Regular.otf": "61d76adc675ee9f8f76f45d55218375a",
-"assets/NOTICES": "35f1c827349847800c0fe903cd7391ac",
-"assets/packages/pdfrx/assets/pdfium.wasm": "e45b1bd7c49fb3c1b265367302856ed6",
-"assets/packages/pdfrx/assets/pdfium_client.js": "9ef7c314155dc36c966ef89df070dfd2",
-"assets/packages/pdfrx/assets/pdfium_worker.js": "adcae9fa02fc61df6c478f3a81275436",
+"assets/fonts/MaterialIcons-Regular.otf": "7ac6d6b81f197e82da76f073f8d6a456",
+"assets/NOTICES": "32f85b50c93e5d3d31dbec7e10614421",
 "assets/packages/syncfusion_flutter_pdfviewer/assets/fonts/RobotoMono-Regular.ttf": "5b04fdfec4c8c36e8ca574e40b7148bb",
 "assets/packages/syncfusion_flutter_pdfviewer/assets/highlight.png": "7384946432b51b56b0990dca1a735169",
 "assets/packages/syncfusion_flutter_pdfviewer/assets/squiggly.png": "c9602bfd4aa99590ca66ce212099885f",
@@ -46,14 +43,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "ab00f5167803b8ff7837820f8fb9557e
 "canvaskit/skwasm.wasm": "39dd80367a4e71582d234948adc521c0",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "83d881c1dbb6d6bcd6b42e274605b69c",
-"flutter_bootstrap.js": "c3d76d8eafa7251d5cbbd67049b30941",
+"flutter_bootstrap.js": "3bc68c729299807da2e7d11edf30eff7",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "4cbc2b15c9c7ffdea1c440506973c312",
 "/": "4cbc2b15c9c7ffdea1c440506973c312",
-"main.dart.js": "9af59ca56d74fe9a30f8eabbf3f8e156",
+"main.dart.js": "610029272555e10b4b510f150e6151ce",
 "manifest.json": "18bdab9543a9a04281bace413f101231",
 "version.json": "99c6e3b879063389da2108d8d12c597b"};
 // The application shell files that are downloaded before a service worker can
