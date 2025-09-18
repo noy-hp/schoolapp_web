@@ -1,10 +1,9 @@
-// lib/screens/grad_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/nav_bar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-// Web-only: iframe viewer
+// Web-only iframe
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 // Modern Flutter Web
@@ -20,8 +19,7 @@ class _GradScreenState extends State<GradScreen> {
   /// Label -> asset path (match file names exactly, case-sensitive)
   final Map<String, String> _newsPdfs = const {
     'grad 1': 'assets/news_pdfs/grad1.pdf',
-    // add more when ready, e.g.:
-    // 'grad 2': 'assets/news_pdfs/grad2.pdf',
+    // add more here when ready
   };
 
   // Current selection (when not overridden by Library)
@@ -30,11 +28,6 @@ class _GradScreenState extends State<GradScreen> {
   // Optional overrides when navigated from Library
   String? _overrideAsset;   // e.g., 'assets/library_pdfs/3.pdf'
   String? _overrideTitle;
-
-  // Viewer state (iframe URL uses PDF hash params)
-  int _page = 1;
-  double _zoom = 100; // %
-  bool _fitWidth = false;
 
   // iframe plumbing
   bool _registered = false;
@@ -60,11 +53,6 @@ class _GradScreenState extends State<GradScreen> {
       if (args is Map) {
         _overrideAsset = args['asset'] as String?;
         _overrideTitle = args['title'] as String?;
-        if ((_overrideAsset ?? '').isNotEmpty) {
-          _page = 1;
-          _zoom = 100;
-          _fitWidth = false;
-        }
       }
       _handledArgs = true;
     }
@@ -99,11 +87,10 @@ class _GradScreenState extends State<GradScreen> {
     return '$origin${base}assets/$rel';      // → .../assets/assets/news_pdfs/grad1.pdf
   }
 
-  /// Build iframe src with hash params (page/zoom/FitH).
+  /// Always open "fit to width" for readability.
   String _buildPdfSrc() {
     final base = _assetUrlForWeb(_activeAsset());
-    if (_fitWidth) return '$base#view=FitH';
-    return '$base#page=$_page&zoom=${_zoom.toInt()}';
+    return '$base#view=FitH'; // Fit to page width (no custom toolbar controls)
   }
 
   void _reloadIframe() {
@@ -111,14 +98,12 @@ class _GradScreenState extends State<GradScreen> {
     _iframe!.src = _buildPdfSrc();
   }
 
-  void _openInNewTab() {
-    if (!kIsWeb) return;
-    html.window.open(_buildPdfSrc(), '_blank');
-  }
-
   @override
   Widget build(BuildContext context) {
     final title = _overrideTitle ?? 'News & Announcements';
+
+    // Roomy canvas – fewer margins so the doc is larger
+    final horizontalPad = MediaQuery.sizeOf(context).width < 900 ? 8.0 : 12.0;
 
     return Scaffold(
       appBar: const NavBar(),
@@ -126,129 +111,53 @@ class _GradScreenState extends State<GradScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 12),
-
           Center(
             child: Text(
               title,
               style: GoogleFonts.merriweather(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
+          // Small top row: optional PDF picker only (no custom tools)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
+            padding: EdgeInsets.symmetric(horizontal: horizontalPad),
+            child: Row(
               children: [
                 if ((_overrideAsset ?? '').isEmpty) ...[
                   const Text('Select PDF:', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 10),
                   DropdownButton<String>(
                     value: _selected,
                     items: _newsPdfs.keys
-                        .map((label) =>
-                            DropdownMenuItem(value: label, child: Text(label)))
+                        .map((label) => DropdownMenuItem(
+                              value: label,
+                              child: Text(label),
+                            ))
                         .toList(),
                     onChanged: (v) {
                       if (v == null) return;
-                      setState(() {
-                        _selected = v;
-                        _page = 1;
-                        _zoom = 100;
-                        _fitWidth = false;
-                      });
+                      setState(() => _selected = v);
                       _reloadIframe();
                     },
                   ),
                 ],
-
-                TextButton.icon(
-                  onPressed: _reloadIframe,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Reload'),
-                ),
-
-                // Page controls (iframe uses hash-only; no knowledge of page count)
-                IconButton(
-                  tooltip: 'Previous page',
-                  onPressed: () {
-                    setState(() {
-                      _page = _page > 1 ? _page - 1 : 1;
-                      _fitWidth = false;
-                    });
-                    _reloadIframe();
-                  },
-                  icon: const Icon(Icons.chevron_left),
-                ),
-                Text('$_page / –', style: const TextStyle(fontWeight: FontWeight.w600)),
-                IconButton(
-                  tooltip: 'Next page',
-                  onPressed: () {
-                    setState(() {
-                      _page += 1;
-                      _fitWidth = false;
-                    });
-                    _reloadIframe();
-                  },
-                  icon: const Icon(Icons.chevron_right),
-                ),
-
-                // Zoom controls
-                IconButton(
-                  tooltip: 'Zoom out',
-                  onPressed: () {
-                    setState(() {
-                      _zoom = (_zoom - 10).clamp(40, 400);
-                      _fitWidth = false;
-                    });
-                    _reloadIframe();
-                  },
-                  icon: const Icon(Icons.zoom_out),
-                ),
-                Text('${_zoom.toInt()}%',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                IconButton(
-                  tooltip: 'Zoom in',
-                  onPressed: () {
-                    setState(() {
-                      _zoom = (_zoom + 10).clamp(40, 400);
-                      _fitWidth = false;
-                    });
-                    _reloadIframe();
-                  },
-                  icon: const Icon(Icons.zoom_in),
-                ),
-
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() => _fitWidth = true);
-                    _reloadIframe();
-                  },
-                  icon: const Icon(Icons.fit_screen),
-                  label: const Text('Fit width'),
-                ),
-
-                TextButton.icon(
-                  onPressed: _openInNewTab,
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open'),
-                ),
               ],
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
+          // Big viewer – fills the rest of the page
           Expanded(
             child: Container(
-              margin: const EdgeInsets.all(12),
+              margin: EdgeInsets.fromLTRB(horizontalPad, 6, horizontalPad, 12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: const [BoxShadow(blurRadius: 8, color: Colors.black12)],
               ),
               child: !kIsWeb
@@ -256,7 +165,7 @@ class _GradScreenState extends State<GradScreen> {
                       child: Text('The web PDF viewer is only available on Flutter Web.'),
                     )
                   : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       child: HtmlElementView(viewType: _viewTypeId),
                     ),
             ),
