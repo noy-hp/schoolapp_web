@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Use a RELATIVE import so the analyzer always finds it.
-import '../lib/main.dart';
+import 'package:schoolapp_web/main.dart';
 
 void main() {
   testWidgets('App builds', (tester) async {

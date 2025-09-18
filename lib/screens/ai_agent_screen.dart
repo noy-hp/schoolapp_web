@@ -1,7 +1,7 @@
-// lib/screen/ai_agent_screen.dart
+// lib/screens/ai_agent_screen.dart
 
 import 'dart:convert';
-// Web-only helpers to read window.API_BASE from config.js
+// These are web-only; fine because you're deploying to Web.
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:js_util' as jsu;
@@ -10,31 +10,26 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-// NOTE: change this import to '../widgets/nav_bar.dart' if your folder is "widgets"
+// If your folder is "widgets" (plural) use this:
 import '../widgets/nav_bar.dart';
+// If it's "widget" (singular) in your project, switch to:
+// import '../widget/nav_bar.dart';
 
-/// RUNTIME API BASE (Option 2):
-/// 1) On GitHub Pages, create a file next to index.html named `config.js`:
-///      window.API_BASE = "https://YOUR-NGROK.ngrok-free.app";
-/// 2) Ensure index.html loads it (inside <head>):
-///      <script src="config.js"></script>
-/// 3) When ngrok URL changes, edit ONLY config.js on GitHub. No rebuild needed.
+/// Reads API base URL in this priority:
+/// 1) window.API_BASE from config.js (runtime, ideal for GitHub Pages)
+/// 2) localStorage.API_BASE (manual override via console)
+/// 3) build-time define (fallback for local dev)
 String get _apiBase {
-  // 1) Prefer runtime value from config.js (window.API_BASE) on the web
   if (kIsWeb) {
     try {
       final v = jsu.getProperty(html.window, 'API_BASE');
       if (v is String && v.isNotEmpty) return v;
     } catch (_) {}
-    // 2) Allow local override for quick testing (DevTools console):
-    //    localStorage.API_BASE = "https://NEW.ngrok-free.app"
     try {
       final v2 = html.window.localStorage['API_BASE'];
       if (v2 != null && v2.isNotEmpty) return v2;
     } catch (_) {}
   }
-
-  // 3) Fallback for desktop/mobile or local dev
   const defined =
       String.fromEnvironment('API_BASE', defaultValue: 'http://127.0.0.1:3000');
   return defined;
@@ -56,6 +51,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
   final List<_ChatMessage> _messages = const [
     _ChatMessage(role: _Role.assistant, text: 'Hi! Ask me anything 😊'),
   ].toList();
+
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
@@ -77,7 +73,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
   }
 
   Future<void> _checkBackend() async {
-    // Mixed-content guard: HTTPS page cannot call HTTP API in the browser.
+    // HTTPS page cannot call HTTP API in the browser.
     if (kIsWeb &&
         Uri.base.scheme == 'https' &&
         (_chatUri().scheme == 'http' || _healthUri().scheme == 'http')) {
@@ -85,8 +81,8 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
         _apiStatus = _ApiStatus.blocked;
         _apiNote =
             'This page is HTTPS but the API is HTTP.\n'
-            'Edit config.js to use an HTTPS URL (ngrok) like:\n'
-            'window.API_BASE="https://...ngrok-free.app";';
+            'Edit config.js to an HTTPS ngrok URL:\n'
+            'window.API_BASE="https://…ngrok-free.app";';
       });
       return;
     }
@@ -125,14 +121,13 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
     });
     _scrollToBottom();
 
-    // Helpful error if blocked by mixed content
     if (_apiStatus == _ApiStatus.blocked) {
       setState(() {
         _messages.add(const _ChatMessage(
           role: _Role.assistant,
           text:
               'Blocked: Site is HTTPS but API is HTTP.\n'
-              'Open config.js and set an HTTPS ngrok URL, then refresh.',
+              'Update config.js to use an HTTPS ngrok URL, then refresh.',
         ));
         _sending = false;
       });
@@ -169,9 +164,9 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
       } else {
         setState(() {
           _messages.add(_ChatMessage(
-              role: _Role.assistant,
-              text:
-                  'Server error (${res.statusCode}). Please try again later.'));
+            role: _Role.assistant,
+            text: 'Server error (${res.statusCode}). Please try again later.',
+          ));
         });
       }
     } catch (e) {
@@ -181,7 +176,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
           text:
               'Network error: $e\n'
               '• Make sure your backend is running\n'
-              '• API must be HTTPS when site is HTTPS (use ngrok)\n'
+              '• API must be HTTPS when the site is HTTPS (use ngrok)\n'
               '• CORS is allowed in the sample FastAPI (ALLOWED_ORIGINS=*)',
         ));
       });
@@ -225,7 +220,7 @@ class _AIAgentScreenState extends State<AIAgentScreen> {
           ),
           const SizedBox(height: 8),
 
-          // Small connection banner
+          // Connection banner
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Material(
